@@ -16,8 +16,8 @@ class OperationPanel(QGroupBox):
         super().__init__("Operation")
 
         self.all_wells_radio = QRadioButton("Transfer to all wells")
-        self.single_well_radio = QRadioButton("Transfer to one well")
         self.selected_wells_radio = QRadioButton("Transfer to selected wells")
+        self.route_radio = QRadioButton("Route")
 
         self.all_wells_radio.setChecked(True)
 
@@ -36,8 +36,8 @@ class OperationPanel(QGroupBox):
         layout = QVBoxLayout()
 
         layout.addWidget(self.all_wells_radio)
-        layout.addWidget(self.single_well_radio)
         layout.addWidget(self.selected_wells_radio)
+        layout.addWidget(self.route_radio)
 
         layout.addWidget(QLabel("Volume:"))
         layout.addWidget(self.volume_spin)
@@ -52,9 +52,10 @@ class OperationPanel(QGroupBox):
     def get_selected_mode(self) -> str:
         if self.all_wells_radio.isChecked():
             return "all"
-        if self.single_well_radio.isChecked():
-            return "single"
-        return "selected"
+        if self.selected_wells_radio.isChecked():
+            return "selected"
+        return "route"
+
 
     def get_volume_ml(self) -> float:
         return self.volume_spin.value()

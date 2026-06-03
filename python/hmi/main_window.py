@@ -21,13 +21,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Robotic Pipetting HMI")
         self.setMinimumSize(1000, 650)
 
-        app_config = load_yaml_config("serial_config.yaml")
-        serial_config = app_config.get("serial", {})
+        serial_config_file = load_yaml_config("serial_config.yaml")
+        serial_config = serial_config_file.get("serial", {})
+
+        plate_config_file = load_yaml_config("plate_config.yaml")
+        plate_config = plate_config_file.get("plate", {})
 
         self.connection_panel = ConnectionPanel(serial_config=serial_config)
         self.homing_panel = HomingPanel()
         self.operation_panel = OperationPanel()
-        self.well_selector = WellSelector()
+        self.well_selector = WellSelector(plate_config=plate_config)
         self.status_panel = StatusPanel()
 
         self._build_ui()
@@ -65,6 +68,7 @@ class MainWindow(QMainWindow):
         self.homing_panel.estop_requested.connect(self._on_estop_requested)
 
         self.operation_panel.start_requested.connect(self._on_start_requested)
+        self.well_selector.well_selection_changed.connect(self._on_well_selection_changed)
 
     def _on_connect_requested(self, port: str, baudrate: int) -> None:
         self.status_panel.log_message(f"Connect requested: {port} @ {baudrate}")
@@ -83,6 +87,31 @@ class MainWindow(QMainWindow):
 
     def _on_start_requested(self) -> None:
         mode = self.operation_panel.get_selected_mode()
-        wells = self.well_selector.get_selected_wells()
+
+        if mode == "all":
+            wells = self.well_selector.get_all_wells()
+        elif mode == "selected":
+            wells = self.well_selector.get_selected_wells()
+        elif mode == "route":
+            wells = self.well_selector.get_route_wells()
+        else:
+            self.status_panel.log_message(f"Error: Unknown operation mode: {mode}")
+            return
 
         self.status_panel.log_message(f"Start requested. Mode: {mode}. Wells: {wells}")
+
+        for well in wells:
+            try:
+                coordinates = self.well_selector.get_well_coordinates(well)
+                self.status_panel.log_message(f"{well}: {coordinates}")
+            except ValueError as error:
+                self.status_panel.log_message(f"Error: {error}")
+
+    def _on_well_selection_changed(self, wells: list[str]) -> None:
+        mode = self.operation_panel.get_selected_mode()
+
+        if mode == "route":
+            self.status_panel.log_message(f"Route order: {wells}")
+        else:
+            selected_wells = self.well_selector.get_selected_wells()
+            self.status_panel.log_message(f"Selected wells: {selected_wells}")
