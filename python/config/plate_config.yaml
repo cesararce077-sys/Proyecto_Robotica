@@ -1,7 +1,15 @@
 plate:
   name: "6_well_plate"
-  rows: ["A", "B"]
-  columns: [1, 2, 3]
+  rows:
+    - "A"
+    - "B"
+  columns:
+    - 1
+    - 2
+    - 3
+
+  default_deposit_height_m: 0.022
+  default_approach_height_m: 0.060
 
   wells:
     A1:
