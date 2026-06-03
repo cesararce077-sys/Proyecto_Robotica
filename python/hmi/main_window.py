@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QLabel,
 )
 
+from tools.config_loader import load_yaml_config
 from hmi.widgets.connection_panel import ConnectionPanel
 from hmi.widgets.homing_panel import HomingPanel
 from hmi.widgets.operation_panel import OperationPanel
@@ -20,7 +21,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Robotic Pipetting HMI")
         self.setMinimumSize(1000, 650)
 
-        self.connection_panel = ConnectionPanel()
+        app_config = load_yaml_config("serial_config.yaml")
+        serial_config = app_config.get("serial", {})
+
+        self.connection_panel = ConnectionPanel(serial_config=serial_config)
         self.homing_panel = HomingPanel()
         self.operation_panel = OperationPanel()
         self.well_selector = WellSelector()

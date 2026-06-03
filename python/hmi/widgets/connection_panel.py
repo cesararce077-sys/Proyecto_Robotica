@@ -13,24 +13,15 @@ class ConnectionPanel(QGroupBox):
     connect_requested = Signal(str, int)
     disconnect_requested = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self, serial_config: dict | None = None) -> None:
         super().__init__("Connection")
 
-        self.port_combo = QComboBox()
-        self.port_combo.addItems(["COM3", "COM4", "/dev/ttyUSB0", "/dev/ttyACM0"])
+        self.serial_config = serial_config or {}
 
+        self.port_combo = QComboBox()
         self.baudrate_combo = QComboBox()
-        self.baudrate_combo.addItems([
-            "9600",
-            "19200",
-            "38400",
-            "57600",
-            "115200",
-            "230400",
-            "460800",
-            "921600",
-        ])
-        self.baudrate_combo.setCurrentText("115200")
+
+        self._load_config_values()
 
         self.connect_button = QPushButton("Connect")
         self.disconnect_button = QPushButton("Disconnect")
@@ -39,6 +30,31 @@ class ConnectionPanel(QGroupBox):
 
         self._build_ui()
         self._connect_signals()
+
+    def _load_config_values(self) -> None:
+        ports = self.serial_config.get(
+            "available_ports",
+            ["COM3", "COM4", "/dev/ttyUSB0", "/dev/ttyACM0"],
+        )
+
+        baudrates = self.serial_config.get(
+            "standard_baudrates",
+            [9600, 19200, 38400, 57600, 115200],
+        )
+
+        default_port = self.serial_config.get("default_port", ports[0])
+        default_baudrate = self.serial_config.get("default_baudrate", 115200)
+
+        self.port_combo.addItems([str(port) for port in ports])
+        self.baudrate_combo.addItems([str(baudrate) for baudrate in baudrates])
+
+        if str(default_port) in [self.port_combo.itemText(i) for i in range(self.port_combo.count())]:
+            self.port_combo.setCurrentText(str(default_port))
+
+        if str(default_baudrate) in [self.baudrate_combo.itemText(i) for i in range(self.baudrate_combo.count())]:
+            self.baudrate_combo.setCurrentText(str(default_baudrate))
+
+
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout()
