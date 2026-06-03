@@ -6,7 +6,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QComboBox,
     QPushButton,
-    QSpinBox,
 )
 
 
@@ -20,9 +19,18 @@ class ConnectionPanel(QGroupBox):
         self.port_combo = QComboBox()
         self.port_combo.addItems(["COM3", "COM4", "/dev/ttyUSB0", "/dev/ttyACM0"])
 
-        self.baudrate_spin = QSpinBox()
-        self.baudrate_spin.setRange(9600, 921600)
-        self.baudrate_spin.setValue(115200)
+        self.baudrate_combo = QComboBox()
+        self.baudrate_combo.addItems([
+            "9600",
+            "19200",
+            "38400",
+            "57600",
+            "115200",
+            "230400",
+            "460800",
+            "921600",
+        ])
+        self.baudrate_combo.setCurrentText("115200")
 
         self.connect_button = QPushButton("Connect")
         self.disconnect_button = QPushButton("Disconnect")
@@ -41,7 +49,7 @@ class ConnectionPanel(QGroupBox):
 
         baud_layout = QHBoxLayout()
         baud_layout.addWidget(QLabel("Baudrate:"))
-        baud_layout.addWidget(self.baudrate_spin)
+        baud_layout.addWidget(self.baudrate_combo)
 
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.connect_button)
@@ -60,5 +68,5 @@ class ConnectionPanel(QGroupBox):
 
     def _emit_connect(self) -> None:
         port = self.port_combo.currentText()
-        baudrate = self.baudrate_spin.value()
+        baudrate = int(self.baudrate_combo.currentText())
         self.connect_requested.emit(port, baudrate)
