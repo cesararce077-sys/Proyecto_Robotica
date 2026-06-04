@@ -19,3 +19,7 @@ serial:
     - 230400
     - 460800
     - 921600
+
+  serial:
+    port: "COM4"
+    baud_rate: 115200
