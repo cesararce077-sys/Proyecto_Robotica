@@ -2,9 +2,9 @@
 
 #include <Arduino.h>
 
-#include "config.h"
-#include "robot_state_machine.h"
-#include "serial_protocol.h"
+#include "../../config.h"
+#include "../controller_state_machine/robot_state_machine/robot_state_machine.h"
+#include "../communication/serial_protocol/serial_protocol.h"
 
 static void updateHoming() {
   if (getCurrentState() != STATE_HOMING) {

@@ -1,77 +1,92 @@
-#include "robot_state_machine.h"
+#include "serial_protocol.h"
 
-static RobotState currentState = STATE_BOOTING;
-static bool isHomed = false;
-static unsigned long stateEnteredAtMs = 0;
+#include <Arduino.h>
+#include <ArduinoJson.h>
 
-void initializeStateMachine() {
-  currentState = STATE_IDLE;
-  isHomed = false;
-  stateEnteredAtMs = millis();
-}
+#include "../../config.h"
+#include "../../controller_state_machine/robot_state_machine/robot_state_machine.h"
 
-RobotState getCurrentState() {
-  return currentState;
-}
 
-const char* getCurrentStateString() {
-  return stateToString(currentState);
-}
+static String inputLine = "";
 
-const char* stateToString(RobotState state) {
-  switch (state) {
-    case STATE_BOOTING:
-      return "BOOTING";
-    case STATE_IDLE:
-      return "IDLE";
-    case STATE_HOMING:
-      return "HOMING";
-    case STATE_MOVING:
-      return "MOVING";
-    case STATE_ROUTE_RUNNING:
-      return "ROUTE_RUNNING";
-    case STATE_ACTION_RUNNING:
-      return "ACTION_RUNNING";
-    case STATE_STOPPED:
-      return "STOPPED";
-    case STATE_ERROR:
-      return "ERROR";
-    case STATE_ESTOPPED:
-      return "ESTOPPED";
-    default:
-      return "UNKNOWN";
+void initializeSerialProtocol() {
+  Serial.begin(BAUD_RATE);
+
+  unsigned long startTime = millis();
+
+  while (!Serial && millis() - startTime < 5000) {
+    delay(10);
   }
+
+  delay(500);
 }
 
-bool getIsHomed() {
-  return isHomed;
+bool readSerialLine(String& lineOut) {
+  while (Serial.available() > 0) {
+    char incomingChar = Serial.read();
+
+    if (incomingChar == '\n') {
+      lineOut = inputLine;
+      inputLine = "";
+      return true;
+    }
+
+    inputLine += incomingChar;
+  }
+
+  return false;
 }
 
-void setIsHomed(bool homed) {
-  isHomed = homed;
+void sendStatus(const char* status, const char* message) {
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "status";
+  doc["status"] = status;
+  doc["state"] = getCurrentStateString();
+  doc["homed"] = getIsHomed();
+  doc["message"] = message;
+
+  serializeJson(doc, Serial);
+  Serial.println();
 }
 
-unsigned long getStateEnteredAtMs() {
-  return stateEnteredAtMs;
+void sendAck(const char* cmd, bool ok, const char* message) {
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "ack";
+  doc["cmd"] = cmd;
+  doc["ok"] = ok;
+  doc["state"] = getCurrentStateString();
+  doc["homed"] = getIsHomed();
+  doc["message"] = message;
+
+  serializeJson(doc, Serial);
+  Serial.println();
 }
 
-bool isBusy() {
-  return currentState == STATE_HOMING ||
-         currentState == STATE_MOVING ||
-         currentState == STATE_ROUTE_RUNNING ||
-         currentState == STATE_ACTION_RUNNING;
+void sendCommandError(const char* cmd, const char* message) {
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "error";
+  doc["cmd"] = cmd;
+  doc["ok"] = false;
+  doc["state"] = getCurrentStateString();
+  doc["homed"] = getIsHomed();
+  doc["message"] = message;
+
+  serializeJson(doc, Serial);
+  Serial.println();
 }
 
-bool canStartHoming() {
-  return currentState == STATE_IDLE ||
-         currentState == STATE_STOPPED;
-}
+void sendError(const char* message) {
+  StaticJsonDocument<256> doc;
 
-bool canStartMotion() {
-  return currentState == STATE_IDLE && isHomed;
-}
+  doc["type"] = "error";
+  doc["ok"] = false;
+  doc["state"] = getCurrentStateString();
+  doc["homed"] = getIsHomed();
+  doc["message"] = message;
 
-void enterState(RobotState newState) {
-  currentState = newState;
-  stateEnteredAtMs = millis();
+  serializeJson(doc, Serial);
+  Serial.println();
 }

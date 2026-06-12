@@ -1,9 +1,11 @@
 #include "command_parser.h"
 
+#include <Arduino.h>
 #include <ArduinoJson.h>
 
-#include "robot_state_machine.h"
-#include "serial_protocol.h"
+#include "../../controller_state_machine/robot_state_machine/robot_state_machine.h"
+#include "../serial_protocol/serial_protocol.h"
+
 
 static void handlePing() {
   sendAck("PING", true, "ESP32-C6 alive");
